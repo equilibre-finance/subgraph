@@ -94,7 +94,7 @@ export function handleTransfer(event: Transfer): void {
     }
   }
 
-  // case where direct send first on KAVA withdrawls
+  // case where direct send first on Kava withdrawls
   if (event.params.to.toHexString() == pair.id) {
     let burns = transaction.burns
     let burn = new BurnEvent(
@@ -214,10 +214,10 @@ export function handleSync(event: Sync): void {
   let pair = Pair.load(event.address.toHex())
   let token0 = Token.load(pair.token0)
   let token1 = Token.load(pair.token1)
-  let uniswap = Factory.load(FACTORY_ADDRESS)
+  let equilibre = Factory.load(FACTORY_ADDRESS)
 
   // reset factory liquidity by subtracting onluy tarcked liquidity
-  uniswap.totalLiquidityKAVA = uniswap.totalLiquidityKAVA.minus(pair.trackedReserveKAVA as BigDecimal)
+  equilibre.totalLiquidityKava = equilibre.totalLiquidityKava.minus(pair.trackedReserveKava as BigDecimal)
 
   // reset token total liquidity amounts
   token0.totalLiquidity = token0.totalLiquidity.minus(pair.reserve0)
@@ -233,36 +233,36 @@ export function handleSync(event: Sync): void {
 
   pair.save()
 
-  // update KAVA price now that reserves could have changed
+  // update Kava price now that reserves could have changed
   let bundle = Bundle.load('1')
-  bundle.kavaPrice = getKavaPriceInUSD()
+  bundle.KavaPrice = getKavaPriceInUSD()
   bundle.save()
 
-  token0.derivedKAVA = findKavaPerToken(token0 as Token)
-  token1.derivedKAVA = findKavaPerToken(token1 as Token)
+  token0.derivedKava = findKavaPerToken(token0 as Token)
+  token1.derivedKava = findKavaPerToken(token1 as Token)
   token0.save()
   token1.save()
 
   // get tracked liquidity - will be 0 if neither is in whitelist
-  let trackedLiquidityKAVA: BigDecimal
-  if (bundle.kavaPrice.notEqual(ZERO_BD)) {
-    trackedLiquidityKAVA = getTrackedLiquidityUSD(pair.reserve0, token0 as Token, pair.reserve1, token1 as Token).div(
-      bundle.kavaPrice
+  let trackedLiquidityKava: BigDecimal
+  if (bundle.KavaPrice.notEqual(ZERO_BD)) {
+    trackedLiquidityKava = getTrackedLiquidityUSD(pair.reserve0, token0 as Token, pair.reserve1, token1 as Token).div(
+      bundle.KavaPrice
     )
   } else {
-    trackedLiquidityKAVA = ZERO_BD
+    trackedLiquidityKava = ZERO_BD
   }
 
   // use derived amounts within pair
-  pair.trackedReserveKAVA = trackedLiquidityKAVA
-  pair.reserveKAVA = pair.reserve0
-    .times(token0.derivedKAVA as BigDecimal)
-    .plus(pair.reserve1.times(token1.derivedKAVA as BigDecimal))
-  pair.reserveUSD = pair.reserveKAVA.times(bundle.kavaPrice)
+  pair.trackedReserveKava = trackedLiquidityKava
+  pair.reserveKava = pair.reserve0
+    .times(token0.derivedKava as BigDecimal)
+    .plus(pair.reserve1.times(token1.derivedKava as BigDecimal))
+  pair.reserveUSD = pair.reserveKava.times(bundle.KavaPrice)
 
   // use tracked amounts globally
-  uniswap.totalLiquidityKAVA = uniswap.totalLiquidityKAVA.plus(trackedLiquidityKAVA)
-  uniswap.totalLiquidityUSD = uniswap.totalLiquidityKAVA.times(bundle.kavaPrice)
+  equilibre.totalLiquidityKava = equilibre.totalLiquidityKava.plus(trackedLiquidityKava)
+  equilibre.totalLiquidityUSD = equilibre.totalLiquidityKava.times(bundle.KavaPrice)
 
   // now correctly set liquidity amounts for each token
   token0.totalLiquidity = token0.totalLiquidity.plus(pair.reserve0)
@@ -270,7 +270,7 @@ export function handleSync(event: Sync): void {
 
   // save entities
   pair.save()
-  uniswap.save()
+  equilibre.save()
   token0.save()
   token1.save()
 }
@@ -281,7 +281,7 @@ export function handleMint(event: Mint): void {
   let mint = MintEvent.load(mints[mints.length - 1])
 
   let pair = Pair.load(event.address.toHex())
-  let uniswap = Factory.load(FACTORY_ADDRESS)
+  let equilibre = Factory.load(FACTORY_ADDRESS)
 
   let token0 = Token.load(pair.token0)
   let token1 = Token.load(pair.token1)
@@ -294,22 +294,22 @@ export function handleMint(event: Mint): void {
   token0.txCount = token0.txCount.plus(ONE_BI)
   token1.txCount = token1.txCount.plus(ONE_BI)
 
-  // get new amounts of USD and KAVA for tracking
+  // get new amounts of USD and Kava for tracking
   let bundle = Bundle.load('1')
-  let amountTotalUSD = token1.derivedKAVA
+  let amountTotalUSD = token1.derivedKava
     .times(token1Amount)
-    .plus(token0.derivedKAVA.times(token0Amount))
-    .times(bundle.kavaPrice)
+    .plus(token0.derivedKava.times(token0Amount))
+    .times(bundle.KavaPrice)
 
   // update txn counts
   pair.txCount = pair.txCount.plus(ONE_BI)
-  uniswap.txCount = uniswap.txCount.plus(ONE_BI)
+  equilibre.txCount = equilibre.txCount.plus(ONE_BI)
 
   // save entities
   token0.save()
   token1.save()
   pair.save()
-  uniswap.save()
+  equilibre.save()
 
   mint.sender = event.params.sender
   mint.amount0 = token0Amount as BigDecimal
@@ -342,7 +342,7 @@ export function handleBurn(event: Burn): void {
   let burn = BurnEvent.load(burns[burns.length - 1])
 
   let pair = Pair.load(event.address.toHex())
-  let uniswap = Factory.load(FACTORY_ADDRESS)
+  let equilibre = Factory.load(FACTORY_ADDRESS)
 
   //update token info
   let token0 = Token.load(pair.token0)
@@ -354,22 +354,22 @@ export function handleBurn(event: Burn): void {
   token0.txCount = token0.txCount.plus(ONE_BI)
   token1.txCount = token1.txCount.plus(ONE_BI)
 
-  // get new amounts of USD and KAVA for tracking
+  // get new amounts of USD and Kava for tracking
   let bundle = Bundle.load('1')
-  let amountTotalUSD = token1.derivedKAVA
+  let amountTotalUSD = token1.derivedKava
     .times(token1Amount)
-    .plus(token0.derivedKAVA.times(token0Amount))
-    .times(bundle.kavaPrice)
+    .plus(token0.derivedKava.times(token0Amount))
+    .times(bundle.KavaPrice)
 
   // update txn counts
-  uniswap.txCount = uniswap.txCount.plus(ONE_BI)
+  equilibre.txCount = equilibre.txCount.plus(ONE_BI)
   pair.txCount = pair.txCount.plus(ONE_BI)
 
   // update global counter and save
   token0.save()
   token1.save()
   pair.save()
-  uniswap.save()
+  equilibre.save()
 
   // update burn
   // burn.sender = event.params.sender
@@ -405,24 +405,24 @@ export function handleSwap(event: Swap): void {
   let amount0Total = amount0Out.plus(amount0In)
   let amount1Total = amount1Out.plus(amount1In)
 
-  // KAVA/USD prices
+  // Kava/USD prices
   let bundle = Bundle.load('1')
 
-  // get total amounts of derived USD and KAVA for tracking
-  let derivedAmountKAVA = token1.derivedKAVA
+  // get total amounts of derived USD and Kava for tracking
+  let derivedAmountKava = token1.derivedKava
     .times(amount1Total)
-    .plus(token0.derivedKAVA.times(amount0Total))
+    .plus(token0.derivedKava.times(amount0Total))
     .div(BigDecimal.fromString('2'))
-  let derivedAmountUSD = derivedAmountKAVA.times(bundle.kavaPrice)
+  let derivedAmountUSD = derivedAmountKava.times(bundle.KavaPrice)
 
   // only accounts for volume through white listed tokens
   let trackedAmountUSD = getTrackedVolumeUSD(amount0Total, token0 as Token, amount1Total, token1 as Token, pair as Pair)
 
-  let trackedAmountKAVA: BigDecimal
-  if (bundle.kavaPrice.equals(ZERO_BD)) {
-    trackedAmountKAVA = ZERO_BD
+  let trackedAmountKava: BigDecimal
+  if (bundle.KavaPrice.equals(ZERO_BD)) {
+    trackedAmountKava = ZERO_BD
   } else {
-    trackedAmountKAVA = trackedAmountUSD.div(bundle.kavaPrice)
+    trackedAmountKava = trackedAmountUSD.div(bundle.KavaPrice)
   }
 
   // update token0 global volume and token liquidity stats
@@ -448,17 +448,17 @@ export function handleSwap(event: Swap): void {
   pair.save()
 
   // update global values, only used tracked amounts for volume
-  let uniswap = Factory.load(FACTORY_ADDRESS)
-  uniswap.totalVolumeUSD = uniswap.totalVolumeUSD.plus(trackedAmountUSD)
-  uniswap.totalVolumeKAVA = uniswap.totalVolumeKAVA.plus(trackedAmountKAVA)
-  uniswap.untrackedVolumeUSD = uniswap.untrackedVolumeUSD.plus(derivedAmountUSD)
-  uniswap.txCount = uniswap.txCount.plus(ONE_BI)
+  let equilibre = Factory.load(FACTORY_ADDRESS)
+  equilibre.totalVolumeUSD = equilibre.totalVolumeUSD.plus(trackedAmountUSD)
+  equilibre.totalVolumeKava = equilibre.totalVolumeKava.plus(trackedAmountKava)
+  equilibre.untrackedVolumeUSD = equilibre.untrackedVolumeUSD.plus(derivedAmountUSD)
+  equilibre.txCount = equilibre.txCount.plus(ONE_BI)
 
   // save entities
   pair.save()
   token0.save()
   token1.save()
-  uniswap.save()
+  equilibre.save()
 
   let transaction = Transaction.load(event.transaction.hash.toHexString())
   if (transaction === null) {
@@ -505,15 +505,15 @@ export function handleSwap(event: Swap): void {
   // update day entities
   let pairDayData = updatePairDayData(event)
   let pairHourData = updatePairHourData(event)
-  let uniswapDayData = updateDayData(event)
+  let equilibreDayData = updateDayData(event)
   let token0DayData = updateTokenDayData(token0 as Token, event)
   let token1DayData = updateTokenDayData(token1 as Token, event)
 
   // swap specific updating
-  uniswapDayData.dailyVolumeUSD = uniswapDayData.dailyVolumeUSD.plus(trackedAmountUSD)
-  uniswapDayData.dailyVolumeKAVA = uniswapDayData.dailyVolumeKAVA.plus(trackedAmountKAVA)
-  uniswapDayData.dailyVolumeUntracked = uniswapDayData.dailyVolumeUntracked.plus(derivedAmountUSD)
-  uniswapDayData.save()
+  equilibreDayData.dailyVolumeUSD = equilibreDayData.dailyVolumeUSD.plus(trackedAmountUSD)
+  equilibreDayData.dailyVolumeKava = equilibreDayData.dailyVolumeKava.plus(trackedAmountKava)
+  equilibreDayData.dailyVolumeUntracked = equilibreDayData.dailyVolumeUntracked.plus(derivedAmountUSD)
+  equilibreDayData.save()
 
   // swap specific updating for pair
   pairDayData.dailyVolumeToken0 = pairDayData.dailyVolumeToken0.plus(amount0Total)
@@ -529,17 +529,17 @@ export function handleSwap(event: Swap): void {
 
   // swap specific updating for token0
   token0DayData.dailyVolumeToken = token0DayData.dailyVolumeToken.plus(amount0Total)
-  token0DayData.dailyVolumeKAVA = token0DayData.dailyVolumeKAVA.plus(amount0Total.times(token0.derivedKAVA as BigDecimal))
+  token0DayData.dailyVolumeKava = token0DayData.dailyVolumeKava.plus(amount0Total.times(token0.derivedKava as BigDecimal))
   token0DayData.dailyVolumeUSD = token0DayData.dailyVolumeUSD.plus(
-    amount0Total.times(token0.derivedKAVA as BigDecimal).times(bundle.kavaPrice)
+    amount0Total.times(token0.derivedKava as BigDecimal).times(bundle.KavaPrice)
   )
   token0DayData.save()
 
   // swap specific updating
   token1DayData.dailyVolumeToken = token1DayData.dailyVolumeToken.plus(amount1Total)
-  token1DayData.dailyVolumeKAVA = token1DayData.dailyVolumeKAVA.plus(amount1Total.times(token1.derivedKAVA as BigDecimal))
+  token1DayData.dailyVolumeKava = token1DayData.dailyVolumeKava.plus(amount1Total.times(token1.derivedKava as BigDecimal))
   token1DayData.dailyVolumeUSD = token1DayData.dailyVolumeUSD.plus(
-    amount1Total.times(token1.derivedKAVA as BigDecimal).times(bundle.kavaPrice)
+    amount1Total.times(token1.derivedKava as BigDecimal).times(bundle.KavaPrice)
   )
   token1DayData.save()
 }

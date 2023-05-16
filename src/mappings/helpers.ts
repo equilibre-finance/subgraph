@@ -8,7 +8,7 @@ import { Factory as FactoryContract } from '../types/templates/Pair/Factory'
 import { TokenDefinition } from './tokenDefinition'
 
 export const ADDRESS_ZERO = '0x0000000000000000000000000000000000000000'
-export const FACTORY_ADDRESS = '0xa138fafc30f6ec6980aad22656f2f11c38b56a95'
+export const FACTORY_ADDRESS = '0xa138fafc30f6ec6980aad22656f2f11c38b56a95' //PF_Add
 
 export let ZERO_BI = BigInt.fromI32(0)
 export let ONE_BI = BigInt.fromI32(1)
@@ -33,8 +33,8 @@ export function bigDecimalExp18(): BigDecimal {
   return BigDecimal.fromString('1000000000000000000')
 }
 
-export function convertKavaToDecimal(kava: BigInt): BigDecimal {
-  return kava.toBigDecimal().div(exponentToBigDecimal(18))
+export function convertKavaToDecimal(Kava: BigInt): BigDecimal {
+  return Kava.toBigDecimal().div(exponentToBigDecimal(18))
 }
 
 export function convertTokenToDecimal(tokenAmount: BigInt, exchangeDecimals: BigInt): BigDecimal {
@@ -60,7 +60,7 @@ export function isNullKavaValue(value: string): boolean {
 export function fetchTokenSymbol(tokenAddress: Address): string {
   // static definitions overrides
   let staticDefinition = TokenDefinition.fromAddress(tokenAddress)
-  if(staticDefinition != null) {
+  if (staticDefinition != null) {
     return (staticDefinition as TokenDefinition).symbol
   }
 
@@ -88,7 +88,7 @@ export function fetchTokenSymbol(tokenAddress: Address): string {
 export function fetchTokenName(tokenAddress: Address): string {
   // static definitions overrides
   let staticDefinition = TokenDefinition.fromAddress(tokenAddress)
-  if(staticDefinition != null) {
+  if (staticDefinition != null) {
     return (staticDefinition as TokenDefinition).name
   }
 
@@ -126,7 +126,7 @@ export function fetchTokenTotalSupply(tokenAddress: Address): BigInt {
 export function fetchTokenDecimals(tokenAddress: Address): BigInt {
   // static definitions overrides
   let staticDefinition = TokenDefinition.fromAddress(tokenAddress)
-  if(staticDefinition != null) {
+  if (staticDefinition != null) {
     return (staticDefinition as TokenDefinition).decimals
   }
 
@@ -183,8 +183,8 @@ export function createLiquiditySnapshot(position: LiquidityPosition, event: Ethe
   snapshot.block = event.block.number.toI32()
   snapshot.user = position.user
   snapshot.pair = position.pair
-  snapshot.token0PriceUSD = token0.derivedKAVA.times(bundle.kavaPrice)
-  snapshot.token1PriceUSD = token1.derivedKAVA.times(bundle.kavaPrice)
+  snapshot.token0PriceUSD = token0.derivedKava.times(bundle.KavaPrice)
+  snapshot.token1PriceUSD = token1.derivedKava.times(bundle.KavaPrice)
   snapshot.reserve0 = pair.reserve0
   snapshot.reserve1 = pair.reserve1
   snapshot.reserveUSD = pair.reserveUSD

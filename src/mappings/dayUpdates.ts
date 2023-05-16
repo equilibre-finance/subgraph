@@ -5,7 +5,7 @@ import { PairHourData } from './../types/schema'
 import { FACTORY_ADDRESS, ONE_BI, ZERO_BD, ZERO_BI } from './helpers'
 
 export function updateDayData(event: EthereumEvent): DayData {
-  let uniswap = Factory.load(FACTORY_ADDRESS)
+  let equilibre = Factory.load(FACTORY_ADDRESS)
   let timestamp = event.block.timestamp.toI32()
   let dayID = timestamp / 86400
   let dayStartTimestamp = dayID * 86400
@@ -14,15 +14,15 @@ export function updateDayData(event: EthereumEvent): DayData {
     dayData = new DayData(dayID.toString())
     dayData.date = dayStartTimestamp
     dayData.dailyVolumeUSD = ZERO_BD
-    dayData.dailyVolumeKAVA = ZERO_BD
+    dayData.dailyVolumeKava = ZERO_BD
     dayData.totalVolumeUSD = ZERO_BD
-    dayData.totalVolumeKAVA = ZERO_BD
+    dayData.totalVolumeKava = ZERO_BD
     dayData.dailyVolumeUntracked = ZERO_BD
   }
 
-  dayData.totalLiquidityUSD = uniswap.totalLiquidityUSD
-  dayData.totalLiquidityKAVA = uniswap.totalLiquidityKAVA
-  dayData.txCount = uniswap.txCount
+  dayData.totalLiquidityUSD = equilibre.totalLiquidityUSD
+  dayData.totalLiquidityKava = equilibre.totalLiquidityKava
+  dayData.txCount = equilibre.txCount 
   dayData.save()
 
   return dayData as DayData
@@ -105,17 +105,17 @@ export function updateTokenDayData(token: Token, event: EthereumEvent): TokenDay
     tokenDayData = new TokenDayData(tokenDayID)
     tokenDayData.date = dayStartTimestamp
     tokenDayData.token = token.id
-    tokenDayData.priceUSD = token.derivedKAVA.times(bundle.kavaPrice)
+    tokenDayData.priceUSD = token.derivedKava.times(bundle.KavaPrice)
     tokenDayData.dailyVolumeToken = ZERO_BD
-    tokenDayData.dailyVolumeKAVA = ZERO_BD
+    tokenDayData.dailyVolumeKava = ZERO_BD
     tokenDayData.dailyVolumeUSD = ZERO_BD
     tokenDayData.dailyTxns = ZERO_BI
     tokenDayData.totalLiquidityUSD = ZERO_BD
   }
-  tokenDayData.priceUSD = token.derivedKAVA.times(bundle.kavaPrice)
+  tokenDayData.priceUSD = token.derivedKava.times(bundle.KavaPrice)
   tokenDayData.totalLiquidityToken = token.totalLiquidity
-  tokenDayData.totalLiquidityKAVA = token.totalLiquidity.times(token.derivedKAVA as BigDecimal)
-  tokenDayData.totalLiquidityUSD = tokenDayData.totalLiquidityKAVA.times(bundle.kavaPrice)
+  tokenDayData.totalLiquidityKava = token.totalLiquidity.times(token.derivedKava as BigDecimal)
+  tokenDayData.totalLiquidityUSD = tokenDayData.totalLiquidityKava.times(bundle.KavaPrice)
   tokenDayData.dailyTxns = tokenDayData.dailyTxns.plus(ONE_BI)
   tokenDayData.save()
 

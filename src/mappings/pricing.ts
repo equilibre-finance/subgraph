@@ -3,67 +3,46 @@ import { Pair, Token, Bundle } from '../types/schema'
 import { BigDecimal, Address, BigInt } from '@graphprotocol/graph-ts/index'
 import { ZERO_BD, factoryContract, ADDRESS_ZERO, ONE_BD, UNTRACKED_PAIRS } from './helpers'
 
-const WKAVA_ADDRESS = '0xc86c7c0efbd6a49b35e8714c5f59d99de09a225b' // sk was 0x4200000000000000000000000000000000000006 in optimism
-const USDC_WKAVA_PAIR = '0x5C27a0D0e6d045b5113D728081268642060f7499' // sk // created 10008355
-// const DAI_WETH_PAIR = '0x534f3135757db41c4f705b0eac697659f68c4014' // created block 10042267
-// const USDT_WETH_PAIR = '0xc875b07b96b53b80557354a170edd483d24c3ba0' // created block 10093341
+const WKAVA_ADDRESS = '0xc86c7c0efbd6a49b35e8714c5f59d99de09a225b'
+const WKAVA_USDC_PAIR = '0x5c27a0d0e6d045b5113d728081268642060f7499'
 
 export function getKavaPriceInUSD(): BigDecimal {
   // fetch kava prices for each stablecoin
-  // let daiPair = Pair.load(DAI_WETH_PAIR) // dai is token0
-  let usdcPair = Pair.load(USDC_WKAVA_PAIR) // usdc is token0
-  // let usdtPair = Pair.load(USDT_WETH_PAIR) // usdt is token1
+  let wKavaPair = Pair.load(WKAVA_USDC_PAIR) // wKava is token0
 
-  if (usdcPair != null){
-    return usdcPair.token1Price
+  // all 3 have been created
+  if (wKavaPair !== null) {
+    return wKavaPair.token1Price
+  } else {
+    return ZERO_BD
   }
-
-  return ZERO_BD;
-
-  // // all 3 have been created
-  // if (daiPair !== null && usdcPair !== null && usdtPair !== null) {
-  //   let totalLiquidityETH = daiPair.reserve0.plus(usdcPair.reserve0).plus(ZERO_BD)
-  //   let daiWeight = daiPair.reserve0.div(totalLiquidityETH)
-  //   let usdcWeight = usdcPair.reserve0.div(totalLiquidityETH)
-  //   let usdtWeight = ZERO_BD//usdtPair.reserve0.div(totalLiquidityETH)
-  //   return daiPair.token0Price
-  //     .times(daiWeight)
-  //     .plus(usdcPair.token0Price.times(usdcWeight))
-  //     .plus(usdtPair.token1Price.times(usdtWeight))
-  //   // dai and USDC have been created
-  // } else if (daiPair !== null && usdcPair !== null) {
-  //   let totalLiquidityETH = daiPair.reserve0.plus(usdcPair.reserve0)
-  //   let daiWeight = daiPair.reserve0.div(totalLiquidityETH)
-  //   let usdcWeight = usdcPair.reserve0.div(totalLiquidityETH)
-  //   return daiPair.token1Price.times(daiWeight).plus(usdcPair.token1Price.times(usdcWeight))
-  //   // USDC is the only pair so far
-  // } else if (usdcPair !== null) {
-  //   return usdcPair.token1Price
-  // } else {
-  //   return ZERO_BD
-  // }
 }
+
 
 // token where amounts should contribute to tracked volume and liquidity
 let WHITELIST: string[] = [
   '0xc86c7c0efbd6a49b35e8714c5f59d99de09a225b', // WKAVA
-  // '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', // DAI
+  // '0x818ec0a7fe18ff94269904fced6ae3dae6d6dc0b', // wBTC
+  // '0xe1da44c0da55b075ae8e2e4b6986adc76ac77d73', // VARA
+  // '0xdb0e1e86b01c4ad25241b1843e407efc4d615248', // USX
+  // '0x765277eebeca2e31912c9946eae1021199b39c61', // DAI
+  // '0x9591865d9d4bbd3b5fa8a8e2400fd530d1a16191', // wETH
+  // '0x6c2c113c8ca73db67224ef4d8c8dfcec61e52a9c', // LQDR
+  // '0xf390830df829cf22c53c8840554b98eafc5dcbc2', // MAI
+  // '0x739ca6d71365a08f584c8fc4e1029045fa8abc4b', // ACS
+  // '0xc19281f22a075e0f10351cd5d6ea9f0ac63d4327', // BIFI
   '0xfa9343c3897324496a05fc75abed6bac29f8a40f', // USDC
-  // '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', // USDT
-  // '0x4200000000000000000000000000000000000042', // OP
-  // '0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f', //SNX
-  // '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599' // WBTC
 ]
 
 // minimum liquidity required to count towards tracked volume for pairs with small # of Lps
 let MINIMUM_USD_THRESHOLD_NEW_PAIRS = BigDecimal.fromString('400000')
 
 // minimum liquidity for price to get tracked
-let MINIMUM_LIQUIDITY_THRESHOLD_KAVA = BigDecimal.fromString('2')
+let MINIMUM_LIQUIDITY_THRESHOLD_ETH = BigDecimal.fromString('2')
 
 /**
- * Search through graph to find derived Kava per token.
- * @todo update to be derived KAVA (add stablecoin estimates)
+ * Search through graph to find derived Eth per token.
+ * @todo update to be derived ETH (add stablecoin estimates)
  **/
 export function findKavaPerToken(token: Token): BigDecimal {
   if (token.id == WKAVA_ADDRESS) {
@@ -74,13 +53,13 @@ export function findKavaPerToken(token: Token): BigDecimal {
     let pairAddress = factoryContract.getPair(Address.fromString(token.id), Address.fromString(WHITELIST[i]), false)
     if (pairAddress.toHexString() != ADDRESS_ZERO) {
       let pair = Pair.load(pairAddress.toHexString())
-      if (pair.token0 == token.id && pair.reserveKAVA.gt(MINIMUM_LIQUIDITY_THRESHOLD_KAVA)) {
+      if (pair.token0 == token.id && pair.reserveKava.gt(MINIMUM_LIQUIDITY_THRESHOLD_ETH)) {
         let token1 = Token.load(pair.token1)
-        return pair.token1Price.times(token1.derivedKAVA as BigDecimal) // return token1 per our token * Kava per token 1
+        return pair.token1Price.times(token1.derivedKava as BigDecimal) // return token1 per our token * Eth per token 1
       }
-      if (pair.token1 == token.id && pair.reserveKAVA.gt(MINIMUM_LIQUIDITY_THRESHOLD_KAVA)) {
+      if (pair.token1 == token.id && pair.reserveKava.gt(MINIMUM_LIQUIDITY_THRESHOLD_ETH)) {
         let token0 = Token.load(pair.token0)
-        return pair.token0Price.times(token0.derivedKAVA as BigDecimal) // return token0 per our token * KAVA per token 0
+        return pair.token0Price.times(token0.derivedKava as BigDecimal) // return token0 per our token * ETH per token 0
       }
     }
   }
@@ -101,8 +80,8 @@ export function getTrackedVolumeUSD(
   pair: Pair
 ): BigDecimal {
   let bundle = Bundle.load('1')
-  let price0 = token0.derivedKAVA.times(bundle.kavaPrice)
-  let price1 = token1.derivedKAVA.times(bundle.kavaPrice)
+  let price0 = token0.derivedKava.times(bundle.KavaPrice)
+  let price1 = token1.derivedKava.times(bundle.KavaPrice)
 
   // dont count tracked volume on these pairs - usually rebass tokens
   if (UNTRACKED_PAIRS.includes(pair.id)) {
@@ -165,8 +144,8 @@ export function getTrackedLiquidityUSD(
   token1: Token
 ): BigDecimal {
   let bundle = Bundle.load('1')
-  let price0 = token0.derivedKAVA.times(bundle.kavaPrice)
-  let price1 = token1.derivedKAVA.times(bundle.kavaPrice)
+  let price0 = token0.derivedKava.times(bundle.KavaPrice)
+  let price1 = token1.derivedKava.times(bundle.KavaPrice)
 
   // both are whitelist tokens, take average of both amounts
   if (WHITELIST.includes(token0.id) && WHITELIST.includes(token1.id)) {
