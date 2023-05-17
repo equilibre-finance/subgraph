@@ -6,7 +6,7 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: Factory
-    network: kava-evm
+    network: kava
     source:
       address: '0xa138fafc30f6ec6980aad22656f2f11c38b56a95'
       abi: Factory
@@ -34,7 +34,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: Pair
-    network: kava-evm
+    network: kava
     source:
       abi: Pair
     mapping:
